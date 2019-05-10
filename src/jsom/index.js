@@ -1,50 +1,10 @@
 import ServiceInfo from "../info";
 import ResultMessage from "../result";
-
-function before(target, name, descriptor) {
-    var oldValue = descriptor.value;
-    descriptor.value = function () {
-        before();
-        return oldValue.apply(this, arguments);
-    };
-    return descriptor;
-}
-
-function after(target, name, descriptor) {
-    var oldValue = descriptor.value;
-    descriptor.value = function () {
-        let r = oldValue.apply(this, arguments);
-        return r.then(after)
-    };
-    return descriptor;
-}
-const aop = (before, after) => (target, name, descriptor) => {
-    var oldValue = descriptor.value;
-    descriptor.value = function () {
-        before();
-        let r = oldValue.apply(this, arguments);
-        return r.then(after)
-    };
-    return descriptor;
-}
-
-function beforeExecu() {
-    Config.before.forEach((i) => {
-        typeof i === "function" && i();
-    })
-}
-
-function afterExecu(v) {
-    Config.after.forEach((i) => {
-        typeof i === "function" && i();
-    })
-    return v;
-}
-let Config = {
-    before: [],
-    after: []
-}
-
+import {
+    aop,
+    funList,
+    Config
+} from "../config";
 
 'use strict';
 class JSOM {
@@ -52,11 +12,12 @@ class JSOM {
      * @constructor 
      * @param {string} site 根据site获取clientContext,为空则默认取当前站点
      * @param {string} listTitle 设置默认操作列表名
-     * @param {string} listId 设置默认操作列表id
+     * @param {string} listId  设置默认操作列表id
      */
     constructor(site = "", listTitle = "", listId = "") {
         this.ServiceInfo = new ServiceInfo(site, listTitle, listId);
     };
+
 
     /**
      * 设置读取的表名
@@ -66,7 +27,8 @@ class JSOM {
         this.ServiceInfo.listTitle = title;
         return this;
     };
-    @aop(beforeExecu, afterExecu)
+
+
     /**
      * 读取当前用户数据
      * result.data = user or result.data = errorMessage 
@@ -91,7 +53,9 @@ class JSOM {
         }
         return new Promise(getUser);
     };
-    @aop(beforeExecu, afterExecu)
+
+
+
     /**
      * //根据caml语句和要获取的属性，返回用户信息,实际是读取User Information List表
      * @param {any} caml 
@@ -103,7 +67,7 @@ class JSOM {
 
         function getItem(res, rej) {
             // var list = web.get_lists().getById("xx");
-            // === var olist = info.web.get_lists().getByTitle("User Information List");
+            // ===   var olist = info.web.get_lists().getByTitle("User Information List");
             var olist = info.web.get_siteUserInfoList();
             var camlQuery = JSOM.getCamlQuery(caml);
             var collListItem = olist.getItems(camlQuery);
@@ -114,6 +78,7 @@ class JSOM {
             } else {
                 info.context.load(collListItem);
             }
+
             info.context.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -122,11 +87,13 @@ class JSOM {
                 if (!fields || fields.length < 1) {
                     newPageInfo = collListItem.get_listItemCollectionPosition()
                 }
+
                 var it = collListItem.getEnumerator();
                 var dataArray = new Array();
                 while (it.moveNext()) {
                     var item = it.get_current();
                     var dataObj = new Object;
+
                     if (include !== "") {
                         for (var i in fields) {
                             var prop = fields[i];
@@ -135,6 +102,7 @@ class JSOM {
                     } else {
                         dataObj = item.get_fieldValues();
                     }
+
                     dataArray.push(dataObj);
                 }
                 data = {
@@ -152,7 +120,9 @@ class JSOM {
         }
         return new Promise(getItem);
     }
-    @aop(beforeExecu, afterExecu)
+
+
+
     /**
      * 根据caml语句、定位信息和要获取的属性，返回列表
      * @param {any} caml 搜索caml
@@ -167,6 +137,7 @@ class JSOM {
             var olist = JSOM.getList(info);
             var camlQuery = JSOM.getCamlQuery(caml, pageInfo);
             var collListItem = olist.getItems(camlQuery);
+
             var include = "";
             if (fields && fields.length > 0) {
                 include = "Include(" + fields.join() + ")";
@@ -174,6 +145,7 @@ class JSOM {
             } else {
                 info.context.load(collListItem);
             }
+
             info.context.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(data) {
@@ -183,11 +155,13 @@ class JSOM {
                     newPageInfo = collListItem.get_listItemCollectionPosition()
                 }
 
+
                 var it = collListItem.getEnumerator();
                 var dataArray = new Array();
                 while (it.moveNext()) {
                     var item = it.get_current();
                     var dataObj = new Object;
+
                     if (include !== "") {
                         for (var i in fields) {
                             var prop = fields[i];
@@ -196,6 +170,7 @@ class JSOM {
                     } else {
                         dataObj = item.get_fieldValues();
                     }
+
                     dataArray.push(dataObj);
                 }
                 data = {
@@ -213,7 +188,9 @@ class JSOM {
         }
         return new Promise(getPageItem);
     };
-    @aop(beforeExecu, afterExecu)
+
+
+
     /**
      * 根据id获取item项
      * @param {string | number} id 
@@ -242,7 +219,9 @@ class JSOM {
         }
         return new Promise(getItem);
     };
-    @aop(beforeExecu, afterExecu)
+
+
+
     /** 
      * 根据传入的对象和id，更新指定的列表项
      * @param {string | number} id 
@@ -253,7 +232,7 @@ class JSOM {
 
         function updateItem(res, rej) {
             var oList = JSOM.getList(info); //读取表
-            var oListItem = oList.getItemById(id); //根据ID字段搜索表内容，唯一？            
+            var oListItem = oList.getItemById(id); //根据ID字段搜索表内容，唯一？			
             JSOM.setListItem(oListItem, attributes);
             oListItem.update(); //设置数据更新
             info.context.executeQueryAsync(onSuccess, onError);
@@ -270,7 +249,8 @@ class JSOM {
         }
         return new Promise(updateItem);
     };
-    @aop(beforeExecu, afterExecu)
+
+
     /** 
      * 根据传入的caml，更新第一项
      * @param {any} caml 
@@ -312,7 +292,7 @@ class JSOM {
         }
         return new Promise(updateItem);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 根据传入的idList，更新所有项
      * @param {string[] | number[]} idList 
@@ -347,7 +327,8 @@ class JSOM {
         }
         return new Promise(updateItems);
     };
-    @aop(beforeExecu, afterExecu)
+
+
     /** 
      * 根据传入的caml，更新所有项
      * @param {any} caml 
@@ -387,7 +368,8 @@ class JSOM {
         }
         return new Promise(updateItems);
     };
-    @aop(beforeExecu, afterExecu)
+
+
     /** 
      * 根据传入id删除列表项
      * @param {string | number} id 
@@ -399,6 +381,7 @@ class JSOM {
             var list = JSOM.getList(info);
             var listItem = list.getItemById(id);
             listItem.deleteObject();
+
             info.context.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -413,7 +396,7 @@ class JSOM {
         }
         return new Promise(deleteItem);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 根据caml批量删除
      * @param {any} caml 
@@ -448,6 +431,7 @@ class JSOM {
                 res(result);
             };
 
+
             function onError(sender, args) {
                 var result = new ResultMessage(false, args, args.get_message());
                 rej(result);
@@ -455,9 +439,9 @@ class JSOM {
         }
         return new Promise(deleteItems);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
-     * 根据idList批量删除 待测试
+     * 根据idList批量删除   待测试
      * @param {string[] | number[]} idList
      */
     deleteListItemsByIdList(idList) {
@@ -481,6 +465,7 @@ class JSOM {
             };
 
 
+
             function onError(sender, args) {
                 var result = new ResultMessage(false, args, args.get_message());
                 rej(result);
@@ -488,7 +473,7 @@ class JSOM {
         }
         return new Promise(deleteItems);
     }
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 根据传入的对象，创建列表项
      * @param { string } subFolderPath 默认加到列表根路径下，如果多层文件夹也要多层
@@ -523,7 +508,46 @@ class JSOM {
         }
         return new Promise(createItem);
     };
-    @aop(beforeExecu, afterExecu)
+
+    /** 
+     * 根据传入的对象，创建列表项
+     * @param { string } subFolderPath 默认加到列表根路径下，如果多层文件夹也要多层
+     * @param { { [field: string]: {type: string, value: string} } } attributesList
+     */
+    createListItems(subFolderPath, attributesList) {
+        let info = this.ServiceInfo;
+        let newItems = [];
+
+        function createItem(res, rej) {
+            let list = JSOM.getList(info);
+            attributesList.forEach((item) => {
+                let itemCreateInfo = new SP.ListItemCreationInformation();
+                if (subFolderPath) {
+                    itemCreateInfo.set_folderUrl(info.context.get_url() + "/" + info.listTitle + "/" + subFolderPath);
+                }
+                let newItem = list.addItem(itemCreateInfo);
+                JSOM.setListItem(newItem, item);
+                newItem.update();
+                info.context.load(newItem);
+                newItems.push(newItem);
+            });
+            info.context.executeQueryAsync(onSuccess, onError);
+
+            function onSuccess(sender, args) {
+                var result = new ResultMessage(true, {
+                    id: newItems.map((i) => i.get_id())
+                });
+                res(result);
+            }
+
+            function onError(sender, args) {
+                var result = new ResultMessage(false, args, args.get_message());
+                rej(result);
+            }
+        }
+        return new Promise(createItem);
+    };
+
     /** 
      * 检查当前用户是否在此用户组
      * @param { string } groupName 要检查的组名
@@ -562,7 +586,7 @@ class JSOM {
         }
         return new Promise(checkUser);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 检查用户是否在此用户组
      * @param { string | number } userId 用户ID
@@ -600,7 +624,7 @@ class JSOM {
         }
         return new Promise(checkUser);
     }
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 获取所有在此用户组的用户
      * @param { string } groupName 要检查的组名
@@ -611,10 +635,13 @@ class JSOM {
         function checkUser(res, rej) {
             var context = info.context;
             var web = info.web;
+
             var group = web.get_siteGroups().getByName(groupName);
             context.load(group);
+
             var groupUsers = group.get_users();
             context.load(groupUsers);
+
             context.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -633,6 +660,7 @@ class JSOM {
                         userData: groupUser
                     });
                 }
+
                 var result = new ResultMessage(true, {
                     userList: userList,
                     group: groupData
@@ -647,7 +675,7 @@ class JSOM {
         }
         return new Promise(checkUser);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 更新文档库item，可更新文件,待完善
      * 有大小限制，不大于2M,文件相关操作建议使用pnp.js
@@ -655,7 +683,7 @@ class JSOM {
      * @param { string } newFileName 文件新名字
      * @param { any } arrayBuffer 二进制文件数据
      * @param { { [field: string]: {type: string, value: string} }} attributesObj 更新的字段值
-     * @param { string | number} isNewFileName 是否重命名
+     * @param { string | number} isNewFileName  是否重命名
      */
     updateDocumentLibraryItemById(id, newFileName, arrayBuffer, attributesObj, isNewFileName = false) {
         var self = this;
@@ -697,13 +725,13 @@ class JSOM {
         }
         return new Promise(updateItem);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 重写文件,待完善
      * 有大小限制，不大于1.5M,文件相关操作建议使用pnp.js
      * @param { any } arrayBuffer 二进制文件数据
      * @param { string } fileUrl 文件夹路径
-     * @param { string } folderName 文件夹名
+     * @param { string } folderName  文件夹名
      */
     overWriteFile(arrayBuffer, fileUrl, folderName) {
         let info = this.ServiceInfo;
@@ -711,6 +739,7 @@ class JSOM {
         function overWrite(res, rej) {
             let clientContext = info.context;
             let oList = JSOM.getList(info);
+
             let bytes = new Uint8Array(arrayBuffer);
             let i, out = '';
             let bytesLength = bytes.length;
@@ -718,10 +747,12 @@ class JSOM {
                 out += String.fromCharCode(bytes[i]);
             }
             let base64 = btoa(out);
+
             let createInfo = new SP.FileCreationInformation();
             createInfo.set_content(base64);
             createInfo.set_url(fileUrl);
             createInfo.set_overwrite(true);
+
             let newFile;
             if (folderName) {
                 // 根据url添加
@@ -730,6 +761,7 @@ class JSOM {
                 // 在根目录添加
                 newFile = oList.get_rootFolder().get_files().add(createInfo);
             }
+
             clientContext.load(newFile);
             clientContext.executeQueryAsync(onSuccess, onError);
 
@@ -745,13 +777,13 @@ class JSOM {
         }
         return new Promise(overWrite);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 创建文档库Item,待完善
      * 有大小限制，不大于1.5M,文件相关操作建议使用pnp.js
      * @param { string } fileUrl 文件路径
      * @param { any } arrayBuffer 二进制文件数据
-     * @param { string } folderName 文件夹名
+     * @param { string } folderName  文件夹名
      * @param { { [field: string]: {type: string, value: string} } } attributesObj 字段数据
      */
     createDocumentLibraryItem(fileUrl, arrayBuffer, folderName, attributesObj) {
@@ -760,7 +792,8 @@ class JSOM {
         function createItem(res, rej) {
             let clientContext = info.context;
             let oList = JSOM.getList(info);
-            //Convert the file contents into base64 data 
+
+            //Convert the file contents into base64 data  
             let bytes = new Uint8Array(arrayBuffer);
             let i, out = '';
             let bytesLength = bytes.length;
@@ -768,7 +801,8 @@ class JSOM {
                 out += String.fromCharCode(bytes[i]);
             }
             let base64 = btoa(out);
-            //Create FileCreationInformation object using the read file data 
+
+            //Create FileCreationInformation object using the read file data  
             let createInfo = new SP.FileCreationInformation();
             createInfo.set_content(base64);
             createInfo.set_url(fileUrl);
@@ -780,6 +814,7 @@ class JSOM {
                 // 在根目录添加
                 newFile = oList.get_rootFolder().get_files().add(createInfo);
             }
+
             let myListItem = newFile.get_listItemAllFields();
             JSOM.setListItem(myListItem, attributesObj);
             myListItem.update();
@@ -800,7 +835,7 @@ class JSOM {
         }
         return new Promise(createItem);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 创建文件夹,暂时只支持在根路径下创建,待完善
      * @param { string } subFolderPath 路径,如果在根路径，为false即可， "/site/listTitle/subFolderPath" 
@@ -836,7 +871,7 @@ class JSOM {
         }
         return new Promise(createItem);
     };
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 检查用户在当前设置的站点下的权限
      * @param {any} permission 权限枚举
@@ -850,6 +885,7 @@ class JSOM {
             let basePerm = new SP.BasePermissions();
             basePerm.set(permission);
             let usPermission = oWebsite.doesUserHavePermissions(basePerm);
+
             clientContext.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -864,7 +900,7 @@ class JSOM {
         }
         return new Promise(checkPermission);
     }
-    @aop(beforeExecu, afterExecu)
+
     /** 
      * 检查用户在当前设置的列表下的权限
      * @param {any} permission 权限枚举
@@ -890,10 +926,11 @@ class JSOM {
         }
         return new Promise(checkPermission);
     }
-    @aop(beforeExecu, afterExecu)
+
+
     /** 
-     * 读取视图数据 
-     * @param {*} caml 
+     * 读取视图数据  
+     * @param {*} caml   
      */
     renderListData(caml) {
         let info = this.ServiceInfo;
@@ -917,7 +954,7 @@ class JSOM {
         }
         return new Promise(render);
     }
-    @aop(beforeExecu, afterExecu)
+
     /**
      * 读取指定列表GUID
      */
@@ -941,7 +978,7 @@ class JSOM {
         }
         return new Promise(getLsitID);
     };
-    @aop(beforeExecu, afterExecu)
+
     getFileById(uniqueId) {
         let info = this.ServiceInfo;
 
@@ -967,6 +1004,7 @@ class JSOM {
     }
 }
 
+
 /**
  * IncludeType
  * include 可以包含的一些额外属性
@@ -978,6 +1016,7 @@ JSOM.IncludeType = {
     RoleAssignments: "RoleAssignments" // 
     // Fields.Include(Title,InternalName)
 }
+
 /** 
  * 设置要更新的字段数据
  * @param {any} newItem
@@ -1001,17 +1040,20 @@ JSOM.setListItem = function (newItem, attributesObj) {
                 }
                 newItem.set_item(key, lookupList);
             }
+
         } else {
             newItem.set_item(key, obj.value);
         }
     };
 };
+
 /**
  * 创建JSOM操作对象
  */
 JSOM.create = function (site = "", listTitle = "", listId = "") {
     return new JSOM(site, listTitle, listId);
 }
+
 /** 
  * 获取列表对象
  * @param {any} info
@@ -1025,6 +1067,7 @@ JSOM.getList = function (info) {
     }
     return list;
 }
+
 /** 
  * 获取camlQuery设置
  * @param {any} caml
@@ -1060,4 +1103,9 @@ JSOM.Config = ({
     before && Config.before.push(before);
     after && Config.after.push(after);
 }
+
+funList.forEach(key => {
+    aop(JSOM.prototype, key);
+});
+
 export default JSOM;

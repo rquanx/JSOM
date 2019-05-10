@@ -1,2 +1,2 @@
-import SharepointServices from "./jsom";
-export default SharepointServices;
+import JSOM from "./jsom";
+export default JSOM;
