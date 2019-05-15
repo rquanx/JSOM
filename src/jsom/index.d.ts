@@ -15,7 +15,7 @@ declare namespace JSOM {
         setListTitle(title: string): JSOM;
 
         /**
-         * 设置读取的表名
+         * 设置读取的表GUID
          * @param  id
          */
         setListID(id: string): JSOM;
