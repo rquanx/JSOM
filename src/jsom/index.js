@@ -157,7 +157,7 @@ class JSOM {
                 }
                 info.context.executeQueryAsync(onSuccess, onError);
 
-                function onSuccess(data) {
+                function onSuccess(sender, args) {
                     let data;
                     let nextPageInfo = null;
                     if (!fields || fields.length < 1) {
@@ -783,7 +783,7 @@ class JSOM {
             clientContext.load(newFile);
             clientContext.executeQueryAsync(onSuccess, onError);
 
-            function onSuccess(data) {
+            function onSuccess(sender, args) {
                 let result = new ResultMessage(true, {});
                 res(result);
             };
@@ -875,7 +875,7 @@ class JSOM {
             oListItem.update();
             clientContext.executeQueryAsync(onSuccess, onError);
 
-            function onSuccess() {
+            function onSuccess(sender, args) {
                 let result = new ResultMessage(true, {});
                 res(result);
             };
