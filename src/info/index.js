@@ -14,7 +14,7 @@ class ServiceInfo {
         this.context = site ? new SP.ClientContext(site) : SP.ClientContext.get_current();
         this.web = this.context.get_web();
         this.currentContext =  SP.ClientContext.get_current();
-        this.currentWeb = currentContext.get_web();
+        this.currentWeb = this.currentContext.get_web();
     }
 }
 
