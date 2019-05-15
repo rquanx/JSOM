@@ -37,13 +37,13 @@ class JSOM {
      * @param {boolean} currentSite
      * @returns {Promise<ResultMessage>}
      */
-    getCurrentUser() {
+    getCurrentUser(currentSite = true) {
         let info = this.ServiceInfo;
 
         function getUser(res, rej) {
             let context = info.context;
             let web = info.web;
-            if (!currentSite) {
+            if (currentSite) {
                 context = info.currentContext;
                 web = info.currentWeb;
             }
