@@ -30,6 +30,13 @@ class JSOM {
         return this;
     };
 
+    /**
+     * 刷新
+     */
+    refresh() {
+        return JSOM.create(this.ServiceInfo.site, this.ServiceInfo.listTitle, this.ServiceInfo.listId);
+    }
+
 
     /**
      * 读取当前用户数据

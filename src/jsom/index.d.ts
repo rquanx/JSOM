@@ -15,6 +15,11 @@ declare namespace JSOM {
         setListTitle(title: string): JSOM;
 
         /**
+         * 刷新
+         */
+        refresh()
+
+        /**
          * 设置读取的表名
          * @param  id
          */
@@ -97,7 +102,7 @@ declare namespace JSOM {
          * @param  folderPath 默认加到列表根路径下，如果多层文件夹也要多层
          * @param  attributesObj
          */
-        createListItem(folderPath: string,attributesObj: JSOM.IAttributesDic): Promise<ResultMessage>;
+        createListItem(folderPath: string, attributesObj: JSOM.IAttributesDic): Promise<ResultMessage>;
 
         /** 
          * 检查当前用户是否在此用户组
