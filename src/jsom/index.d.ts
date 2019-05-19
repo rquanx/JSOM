@@ -15,15 +15,17 @@ declare namespace JSOM {
         setListTitle(title: string): JSOM;
 
         /**
-         * 刷新
-         */
-        refresh()
-
-        /**
          * 设置读取的表名
+         * 设置读取的表GUID
          * @param  id
          */
         setListID(id: string): JSOM;
+
+        /**
+         * 刷新
+         */
+        refresh();
+
 
         /**
          * 读取当前用户数据
