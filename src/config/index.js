@@ -17,6 +17,13 @@ function beforeExecu() {
     })
 }
 
+function afterErrorExecu(v) {
+    Config.after.forEach((i) => {
+        typeof i === "function" && i();
+    });
+    throw v;
+}
+
 function afterExecu(v) {
     Config.after.forEach((i) => {
         typeof i === "function" && i();
@@ -31,7 +38,7 @@ export const aop = (target, name) => {
             return (...arg) => {
                 beforeExecu();
                 let r = value.apply(this, arg);
-                return r.then(afterExecu, afterExecu)
+                return r.then(afterExecu, afterErrorExecu)
             }
         }
     });
