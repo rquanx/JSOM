@@ -3,6 +3,7 @@ import ServiceInfo from "../info";
 declare namespace JSOM {
     class JSOM {
         constructor(site?: string, listTitle?: string, listId?: string);
+        
         private ServiceInfo: ServiceInfo;
 
 
@@ -181,36 +182,18 @@ declare namespace JSOM {
          */
         getListGUID(): Promise<ResultMessage>;
 
-        /** 
-         * 设置要更新的字段数据
-         * @param  item
-         * @param  attributesObj
+        /**
+         * 初始化
+         * @param config 
          */
-        static setListItem(item: any, attributesObj: JSOM.IAttributesDic): void;
-
-
-        /** 
-         * 获取列表对象
-         * @param {ServiceInfo} info
-         */
-        static getList(info: ServiceInfo): any;
-
-
-        /** 
-         * 获取camlQuery设置
-         * @param  caml
-         * @param  pageInfo
-         */
-        static getCamlQuery(caml?: any, pageInfo?: string): any;
-
-        static IncludeType: {
-            DisplayName: "DisplayName", // 显示名称?
-            EffectiveBasePermissions: "EffectiveBasePermissions", // 权限？
-            HasUniqueRoleAssignments: "HasUniqueRoleAssignments", // 
-            RoleAssignments: "RoleAssignments" // 
-        }
+        static Config(config: IConfig);
     }
 
+
+    interface IConfig {
+        before?: () => void;
+        after?: () => void;
+    }
 
 
     interface IAttributes {

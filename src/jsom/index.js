@@ -1,10 +1,15 @@
 import ServiceInfo from "../info";
 import ResultMessage from "../result";
 import {
-    aop,
-    funList,
-    Config
-} from "../config";
+    getItemPath,
+    setListItem,
+    getList,
+    getCamlQuery,
+} from "../util";
+
+import {
+    IncludeType
+} from "../util/enum";
 
 'use strict';
 class JSOM {
@@ -86,7 +91,7 @@ class JSOM {
 
         function getItem(res, rej) {
             let olist = info.web.get_siteUserInfoList();
-            let camlQuery = JSOM.getCamlQuery(caml);
+            let camlQuery = getCamlQuery(caml);
             let collListItem = olist.getItems(camlQuery);
             let include = "";
             if (fields && fields.length > 0) {
@@ -152,8 +157,8 @@ class JSOM {
 
         function getPageItem(res, rej) {
             try {
-                let olist = JSOM.getList(info);
-                let camlQuery = JSOM.getCamlQuery(caml, pageInfo);
+                let olist = getList(info);
+                let camlQuery = getCamlQuery(caml, pageInfo);
                 let collListItem = olist.getItems(camlQuery);
                 let include = "";
                 if (fields && fields.length > 0) {
@@ -221,7 +226,7 @@ class JSOM {
 
         function getItem(res, rej) {
             let context = info.context;
-            let olist = JSOM.getList(info);
+            let olist = getList(info);
             let oListItem = olist.getItemById(id);
             context.load(oListItem);
             context.executeQueryAsync(onSuccess, onError);
@@ -251,9 +256,9 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function updateItem(res, rej) {
-            let oList = JSOM.getList(info); //读取表
+            let oList = getList(info); //读取表
             let oListItem = oList.getItemById(id); //根据ID字段搜索表内容，唯一？			
-            JSOM.setListItem(oListItem, attributes);
+            setListItem(oListItem, attributes);
             oListItem.update(); //设置数据更新
             info.context.executeQueryAsync(onSuccess, onError);
 
@@ -282,21 +287,21 @@ class JSOM {
 
         function updateItem(res, rej) {
             let idList = new Array();
-            let olist = JSOM.getList(info);
-            let camlQuery = JSOM.getCamlQuery(caml);
+            let olist = getList(info);
+            let camlQuery = getCamlQuery(caml);
             let collListItem = olist.getItems(camlQuery);
             info.context.load(collListItem);
             info.context.executeQueryAsync(updateItem, onError);
 
             function updateItem() {
                 let ListItemToBeUpdated = collListItem.getEnumerator();
-                let oList = JSOM.getList(info);
+                let oList = getList(info);
                 ListItemToBeUpdated.moveNext();
                 let oItem = ListItemToBeUpdated.get_current();
                 let id = oItem.get_id();
                 idList.push(id);
                 let oListItem = oList.getItemById(id);
-                JSOM.setListItem(oListItem, attributes);
+                setListItem(oListItem, attributes);
                 oListItem.update();
                 info.context.executeQueryAsync(onSuccess, onError);
             };
@@ -324,12 +329,12 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function updateItems(res, rej) {
-            let oList = JSOM.getList(info); //读取表
+            let oList = getList(info); //读取表
             let count = 0;
             idList.forEach((id) => {
                 let attributes = attributesList[count];
                 let oListItem = oList.getItemById(id);
-                JSOM.setListItem(oListItem, attributes);
+                setListItem(oListItem, attributes);
                 oListItem.update();
                 if (count < attributesList.length - 1) {
                     count++;
@@ -361,19 +366,19 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function updateItems(res, rej) {
-            let olist = JSOM.getList(info);
-            let camlQuery = JSOM.getCamlQuery(caml);
+            let olist = getList(info);
+            let camlQuery = getCamlQuery(caml);
             let collListItem = olist.getItems(camlQuery);
             info.context.load(collListItem);
             info.context.executeQueryAsync(updateMultipleListItemsInSameObj, onError);
 
             function updateMultipleListItemsInSameObj() {
                 let ListItemToBeUpdated = collListItem.getEnumerator();
-                let oList = JSOM.getList(info);
+                let oList = getList(info);
                 while (ListItemToBeUpdated.moveNext()) {
                     let oItem = ListItemToBeUpdated.get_current();
                     let oListItem = oList.getItemById(oItem.get_id());
-                    JSOM.setListItem(oListItem, attributes);
+                    setListItem(oListItem, attributes);
                     oListItem.update();
                 }
                 info.context.executeQueryAsync(onSuccess, onError);
@@ -402,7 +407,7 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function deleteItem(res, rej) {
-            let list = JSOM.getList(info);
+            let list = getList(info);
             let listItem = list.getItemById(id);
             listItem.deleteObject();
 
@@ -431,8 +436,8 @@ class JSOM {
 
         function deleteItems(res, rej) {
             let idList = [];
-            let list = JSOM.getList(info);
-            let camlQuery = JSOM.getCamlQuery(caml);
+            let list = getList(info);
+            let camlQuery = getCamlQuery(caml);
             let collListItem = list.getItems(camlQuery);
             info.context.load(collListItem);
             info.context.executeQueryAsync(deleteItem, onError);
@@ -476,7 +481,7 @@ class JSOM {
 
         function deleteItems(res, rej) {
             if (idList.length > 0) {
-                let list = JSOM.getList(info);
+                let list = getList(info);
                 idList.forEach((id) => {
                     let listItem = list.getItemById(id);
                     listItem.deleteObject();
@@ -511,11 +516,12 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function createItem(res, rej) {
-            let list = JSOM.getList(info);
+            let list = getList(info);
             let itemCreateInfo = new SP.ListItemCreationInformation();
-            folderPath && itemCreateInfo.set_folderUrl(`${info.context.get_url()}/${info.listTitle}/${folderPath}`);
+            let path = getItemPath(info, folderPath);
+            path && itemCreateInfo.set_folderUrl(path);
             let newItem = list.addItem(itemCreateInfo);
-            JSOM.setListItem(newItem, attributesObj);
+            setListItem(newItem, attributesObj);
             newItem.update();
             info.context.load(newItem);
             info.context.executeQueryAsync(onSuccess, onError);
@@ -545,12 +551,13 @@ class JSOM {
         let newItems = [];
 
         function createItem(res, rej) {
-            let list = JSOM.getList(info);
+            let list = getList(info);
             attributesList.forEach((item) => {
                 let itemCreateInfo = new SP.ListItemCreationInformation();
-                folderPath && itemCreateInfo.set_folderUrl(`${info.context.get_url()}/${info.listTitle}/${folderPath}`);
+                let path = getItemPath(info, folderPath);
+                path && itemCreateInfo.set_folderUrl(path);
                 let newItem = list.addItem(itemCreateInfo);
-                JSOM.setListItem(newItem, item);
+                setListItem(newItem, item);
                 newItem.update();
                 info.context.load(newItem);
                 newItems.push(newItem);
@@ -763,7 +770,7 @@ class JSOM {
 
         function overWrite(res, rej) {
             let clientContext = info.context;
-            let oList = JSOM.getList(info);
+            let oList = getList(info);
 
             let bytes = new Uint8Array(arrayBuffer);
             let i, out = '';
@@ -817,7 +824,7 @@ class JSOM {
 
         function createItem(res, rej) {
             let clientContext = info.context;
-            let oList = JSOM.getList(info);
+            let oList = getList(info);
             //Convert the file contents into base64 data  
             let bytes = new Uint8Array(arrayBuffer);
             let i, out = '';
@@ -839,7 +846,7 @@ class JSOM {
                 newFile = oList.get_rootFolder().get_files().add(createInfo);
             }
             let myListItem = newFile.get_listItemAllFields();
-            JSOM.setListItem(myListItem, attributesObj);
+            setListItem(myListItem, attributesObj);
             myListItem.update();
             clientContext.load(myListItem);
             clientContext.executeQueryAsync(onSuccess, onError);
@@ -872,13 +879,14 @@ class JSOM {
 
         function createItem(res, rej) {
             let clientContext = info.context;
-            let oList = JSOM.getList(info);
+            let oList = getList(info);
             let itemCreateInfo = new SP.ListItemCreationInformation();
-            path && itemCreateInfo.set_folderUrl(`${info.context.get_url()}/${info.listTitle}/${path}`);
+            path = getItemPath(info, path);
+            path && itemCreateInfo.set_folderUrl(path);
             itemCreateInfo.set_underlyingObjectType(SP.FileSystemObjectType.folder);
             itemCreateInfo.set_leafName(name);
             let oListItem = oList.addItem(itemCreateInfo);
-            JSOM.setListItem(oListItem, attributesObj);
+            setListItem(oListItem, attributesObj);
             oListItem.update();
             clientContext.executeQueryAsync(onSuccess, onError);
 
@@ -935,8 +943,8 @@ class JSOM {
 
         function checkPermission(res, rej) {
             let clientContext = info.context;
-            let list = JSOM.getList(info);
-            clientContext.load(list, JSOM.IncludeType.EffectiveBasePermissions);
+            let list = getList(info);
+            clientContext.load(list, IncludeType.EffectiveBasePermissions);
             clientContext.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -964,7 +972,7 @@ class JSOM {
         function render(res, rej) {
             let context = info.context;
             let camlStr = typeof caml === "string" ? caml : caml.ToString();
-            let groupByData = JSOM.getList(info).renderListData(camlStr);
+            let groupByData = getList(info).renderListData(camlStr);
             context.executeQueryAsync(onSuccess, onError);
 
             function onSuccess(sender, args) {
@@ -989,7 +997,7 @@ class JSOM {
         let info = this.ServiceInfo;
 
         function getLsitID(res, rej) {
-            let olist = JSOM.getList(info);
+            let olist = getList(info);
             info.context.load(olist, 'Id');
             info.context.executeQueryAsync(onSuccess, onError);
 
@@ -1036,49 +1044,7 @@ class JSOM {
     }
 }
 
-
-/**
- * IncludeType
- * include 可以包含的一些额外属性
- */
-JSOM.IncludeType = {
-    DisplayName: "DisplayName", // 显示名称?
-    EffectiveBasePermissions: "EffectiveBasePermissions", // 权限？
-    HasUniqueRoleAssignments: "HasUniqueRoleAssignments", // 
-    RoleAssignments: "RoleAssignments" // 
-    // Fields.Include(Title,InternalName)
-}
-
-/** 
- * 设置要更新的字段数据
- * @param {any} item
- * @param { [field: string]:{ type: string, value: string} }  attributes
- * 
- * 日期需要toISOString() "2019-04-13T15:34:17.511Z"
- */
-JSOM.setListItem = function (item, attributes) {
-    attributes && Object.keys(attributes).forEach((key) => {
-        const obj = attributes[key];
-        let value = obj.value;
-        let type = obj.type ? obj.type : "";
-        if (JSOM.LookupType[type.toLowerCase()]) {
-            if (typeof (value) !== "object") {
-                value = JSOM.setLookup(value);
-            } else {
-                value = value.map((v) => {
-                    return JSOM.setLookup(v);
-                });
-            }
-        }
-        item.set_item(key, value);
-    });
-};
-
-JSOM.LookupType = {
-    "lookup": true,
-    "lookupvalue": true,
-    "lookupid": true,
-}
+JSOM.Config = undefined;
 
 /**
  * 创建JSOM操作对象
@@ -1086,62 +1052,5 @@ JSOM.LookupType = {
 JSOM.create = function (site = "", listTitle = "", listId = "") {
     return new JSOM(site, listTitle, listId);
 }
-
-/** 
- * 获取列表对象
- * @param {any} info
- */
-JSOM.getList = function (info) {
-    if (!info.listTitle && !info.listId) {
-        throw new Error("listTitle and listId is undefined");
-    }
-    return info.listTitle ? info.web.get_lists().getByTitle(info.listTitle) : info.web.get_lists().getById(info.listId);
-}
-
-/** 
- * 获取camlQuery设置
- * @param {any} caml
- * @param {string} pageInfo
- */
-JSOM.getCamlQuery = function (caml = "", pageInfo = "") {
-    let camlQuery = new SP.CamlQuery();
-    let xml = caml;
-    if (typeof (caml) === "object") {
-        let folder = caml.GetFolder ? caml.GetFolder() : "";
-        if (folder) {
-            camlQuery.set_folderServerRelativeUrl(folder);
-        }
-        xml = caml.ToString();
-    }
-    camlQuery.set_viewXml(xml);
-    if (pageInfo) {
-        let position = new SP.ListItemCollectionPosition();
-        position.set_pagingInfo(pageInfo);
-        camlQuery.set_listItemCollectionPosition(position);
-    }
-    return camlQuery;
-}
-
-/**
- * 设置查阅项
- * @param {any} value
- */
-JSOM.setLookup = function (value) {
-    let lkfieldsomthing = new SP.FieldLookupValue();
-    lkfieldsomthing.set_lookupId(value);
-    return lkfieldsomthing;
-}
-
-JSOM.Config = ({
-    before = undefined,
-    after = undefined
-}) => {
-    before && Config.before.push(before);
-    after && Config.after.push(after);
-}
-
-funList.forEach(key => {
-    aop(JSOM.prototype, key);
-});
 
 export default JSOM;
