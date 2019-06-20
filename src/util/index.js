@@ -2,6 +2,11 @@ import {
     LookupType
 } from "./enum";
 
+/**
+ * 根据info和path设置文件夹路径
+ * @param {*} info 
+ * @param {string} path 
+ */
 export function getItemPath(info, path) {
     if (!path) {
         return "";
@@ -15,7 +20,6 @@ export function getItemPath(info, path) {
         folderPath = `${url}/${folderPath}`;
     }
     return folderPath;
-    itemCreateInfo.set_folderUrl(folderPath);
 }
 
 /** 

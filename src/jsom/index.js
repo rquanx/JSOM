@@ -173,6 +173,7 @@ class JSOM {
                 let result = new ResultMessage(false, e, e.message);
                 rej(result);
             }
+
             function onSuccess(sender, args) {
                 let data;
                 let nextPageInfo = null;
@@ -1041,6 +1042,94 @@ class JSOM {
             }
         }
         return new Promise(getLsitID);
+    }
+
+    getItemAttachments(caml) {
+        let info = this.ServiceInfo;
+
+        function getAttachments(res, rej) {
+            let results = [];
+            let resultCount = 0;
+            let ctx = info.context;
+            let list = getList(info);
+            let camlQuery = getCamlQuery(caml);
+            let oListItems = list.getItems(camlQuery);
+            ctx.load(oListItems);
+            ctx.executeQueryAsync(getItems, onError)
+
+            function getItems() {
+                resultCount = oListItems.get_count();
+                let oListItemEnumerators = oListItems.getEnumerator();
+                while (oListItemEnumerators.moveNext()) {
+                    let item = oListItemEnumerators.get_current();
+                    let attachmentFiles = item.get_attachmentFiles();
+                    results.push(item.get_fieldValues());
+                    ctx.load(attachmentFiles);
+                    ctx.executeQueryAsync(getAttachmentsSuccess(results.length - 1), getAttachmentsError(results.length - 1));
+                }
+            }
+
+            function getAttachmentsSuccess(count) {
+                return function () {
+                    results[count].AttachmentList = [];
+                    if (attachmentFiles.get_count() > 0) {
+                        var attachmentsItemsEnumerator = attachmentFiles.getEnumerator();
+                        while (attachmentsItemsEnumerator.moveNext()) {
+                            var attachitem = attachmentsItemsEnumerator.get_current();
+                            results[count].AttachmentList.push(attachitem);
+                            // var fileName = attachitem.get_fileName();
+                            // var filepath = attachitem.get_path();
+                            // var serverPath = attachitem.get_serverRelativePath();
+                            // var serverUrl = attachitem.get_serverRelativeUrl();
+                            // var objetctData = attachitem.get_objectData();
+                            // var typedObj = attachitem.get_typedObject();
+                        }
+                    }
+                    done(onSuccess);
+                }
+            }
+
+            function getAttachmentsError(count) {
+                return function (sender, args) {
+                    results[count].AttachmentList = undefined;
+                    done(onError);
+                }
+            }
+
+            function done(fn) {
+                resultCount--;
+                if (resultCount < 1) {
+                    fn(sender, args);
+                }
+            }
+
+
+            function onSuccess(sender, args) {
+                let result = new ResultMessage(true, results);
+                res(result);
+            }
+
+            function onError(sender, args) {
+                let result = new ResultMessage(false, args, args.get_message());
+                rej(result);
+            }
+
+        }
+
+        return new Promise(getAttachments);
+    }
+
+    fileCheckIn() {
+        // item.File.CheckIn("", CheckinType.MajorCheckIn);
+    }
+
+    fileCheckOut() {
+        // item.File.CheckOut();
+    }
+
+    filePublish() {
+        // item.File.Publish("");
+
     }
 }
 
